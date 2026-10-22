@@ -507,6 +507,7 @@ app.addEventListener('pointerdown', e => {
 });
 
 window.addEventListener('hashchange', render);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); }); // App 隔夜從背景回來時更新「今天」
 render();
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
 
