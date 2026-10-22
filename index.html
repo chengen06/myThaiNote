@@ -291,8 +291,21 @@ function build(seed) {
   return pages;
 }
 const fresh = () => ({v: 1, rate: 1.05, mode: 'go', pages: build(SEED), exp: []});
-const valid = j => j && typeof j === 'object' && j.pages && Array.isArray(j.exp) && typeof j.rate === 'number';
-function load() { try { const j = JSON.parse(localStorage.getItem(KEY)); if (valid(j)) return j; } catch (e) {} return fresh(); }
+// 匯入檔與本機資料都從這裡進來：id 只准英數、日期固定格式，才能直接放進 HTML 屬性
+const ID = /^\w*$/, DAY = /^\d{4}-\d{2}-\d{2}$/;
+const valid = j => !!j && j.v === 1 && typeof j.rate === 'number' && j.rate > 0
+  && Array.isArray(j.exp) && j.exp.every(e => e && ID.test(e.id) && DAY.test(e.date) && typeof e.amt === 'number')
+  && !!j.pages && PAGES.every(([k]) => Array.isArray(j.pages[k]) && j.pages[k].every(c =>
+       c && ID.test(c.id) && (c.type !== 'list' || (Array.isArray(c.items) && c.items.every(i => i && ID.test(i.id))))));
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return fresh();
+    try { const j = JSON.parse(raw); if (valid(j)) return j; } catch (e) {}
+    localStorage.setItem(KEY + '.bad', raw); // 不合格的舊資料先另存，避免下次儲存時被蓋掉
+  } catch (e) {}
+  return fresh();
+}
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('無法儲存，請到設定匯出備份'); } }
 
 let S = load(), cur = '', editing = false;
@@ -522,6 +535,15 @@ function selfTest() {
   console.assert(pot.every(i => !i.d) && pot.reduce((s, i) => s + i.a, 0) === 5808, '潛在花費');
   console.assert(f.pack.find(c => c.t === '隨身行李').items[2].lv === 2, '巢狀縮排');
   console.assert(linkify('+66 (0) 2217 3000').includes('tel:+6622173000'), 'tel 連結');
+  const ok = fresh(); ok.exp.push({id: 'x1', date: '2026-10-26', amt: 320, cur: 'THB', cat: '餐飲', note: ''});
+  const copy = () => JSON.parse(JSON.stringify(ok));
+  console.assert(valid(ok) && valid(copy()), '預設資料與匯出再匯入應通過');
+  const noPage = copy(); delete noPage.pages.itin;
+  console.assert(!valid(noPage), '缺頁應擋下');
+  const badId = copy(); badId.pages.itin[0].id = '"><img>';
+  console.assert(!valid(badId), '危險 id 應擋下');
+  const badDate = copy(); badDate.exp[0].date = 'abc';
+  console.assert(!valid(badDate), '錯誤日期應擋下');
   console.log('selfTest done');
   return true;
 }
