@@ -414,18 +414,20 @@ function render() {
   const m = location.hash.match(/^#\/(\w+)/);
   const page = m && (S.pages[m[1]] || m[1] === 'settings') ? m[1] : '';
   if (page !== cur) { editing = false; cur = page; window.scrollTo(0, 0); }
+  app.style.transition = 'none'; app.style.transform = ''; // 右滑返回後歸位
   app.innerHTML = !cur ? homeHTML() : cur === 'settings' ? settingsHTML() : pageHTML(cur);
 }
 
 // ---- 事件 ----
 const cardOf = el => S.pages[cur].find(c => c.id === el.closest('[data-cid]').dataset.cid);
 const itemOf = el => cardOf(el).items.find(i => i.id === el.closest('[data-iid]').dataset.iid);
+const goBack = () => { history.length > 1 ? history.back() : location.hash = ''; };
 
 app.addEventListener('click', e => {
   const el = e.target.closest('[data-act]');
   if (!el || e.target.closest('a') || el.tagName === 'FORM') return;
   const act = el.dataset.act;
-  if (act === 'back') { history.length > 1 ? history.back() : location.hash = ''; return; }
+  if (act === 'back') { goBack(); return; }
   if (act === 'go') { location.hash = '#/' + el.dataset.to; return; }
   if (act === 'chk') { const it = itemOf(el), k = doneKey(cur); it[k] = !it[k]; }
   else if (act === 'edit') { editing = !editing; }
@@ -519,6 +521,33 @@ app.addEventListener('pointerdown', e => {
   grip.addEventListener('pointerup', up, {once: true});
   grip.addEventListener('pointercancel', up, {once: true});
 });
+
+// ---- 左緣右滑返回：只在主畫面 App 啟用，Safari 分頁本身已有返回手勢，兩個都觸發會退兩頁 ----
+let swipe = null;
+document.addEventListener('touchstart', e => {
+  const t = e.touches[0], standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches;
+  swipe = cur && standalone && e.touches.length === 1 && t.clientX <= 30 ? {x: t.clientX, y: t.clientY, dx: 0, on: false} : null;
+}, {passive: true});
+document.addEventListener('touchmove', e => {
+  if (!swipe) return;
+  const t = e.touches[0], dx = t.clientX - swipe.x, dy = t.clientY - swipe.y;
+  if (!swipe.on) {
+    if (Math.abs(dy) > 10 && Math.abs(dy) > dx) { swipe = null; return; } // 偏上下移動就當作捲動
+    if (dx < 10) return;
+    swipe.on = true; app.style.transition = 'none';
+  }
+  e.preventDefault();
+  swipe.dx = Math.max(0, dx); app.style.transform = `translateX(${swipe.dx}px)`;
+}, {passive: false});
+const swipeEnd = () => {
+  if (!swipe || !swipe.on) { swipe = null; return; }
+  const done = swipe.dx > innerWidth / 3; swipe = null;
+  app.style.transition = 'transform .2s ease-out';
+  app.style.transform = done ? `translateX(${innerWidth}px)` : '';
+  if (done) setTimeout(goBack, 200);
+};
+document.addEventListener('touchend', swipeEnd);
+document.addEventListener('touchcancel', () => { if (swipe) swipe.dx = 0; swipeEnd(); });
 
 window.addEventListener('hashchange', render);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) render(); }); // App 隔夜從背景回來時更新「今天」
