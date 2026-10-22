@@ -295,12 +295,12 @@ function build(seed) {
 const withBudget = j => ({lb: 20000, tb: 50000, ...j});
 const fresh = () => withBudget({v: 1, rate: 1.05, mode: 'go', pages: build(SEED), exp: []});
 const isBudget = b => b === undefined || (typeof b === 'number' && b > 0);
-// 匯入檔與本機資料都從這裡進來：id 只准英數、日期固定格式，才能直接放進 HTML 屬性
+// 匯入檔與本機資料都從這裡進來：id 只准英數、日期固定格式、縮排只准 0–2，才能直接放進 HTML 屬性
 const ID = /^\w*$/, DAY = /^\d{4}-\d{2}-\d{2}$/;
 const valid = j => !!j && j.v === 1 && typeof j.rate === 'number' && j.rate > 0 && isBudget(j.lb) && isBudget(j.tb)
   && Array.isArray(j.exp) && j.exp.every(e => e && ID.test(e.id) && DAY.test(e.date) && typeof e.amt === 'number')
   && !!j.pages && PAGES.every(([k]) => Array.isArray(j.pages[k]) && j.pages[k].every(c =>
-       c && ID.test(c.id) && typeof c.t === 'string' && (c.type !== 'note' || typeof c.text === 'string') && (c.type !== 'list' || (Array.isArray(c.items) && c.items.every(i => i && ID.test(i.id))))));
+       c && ID.test(c.id) && typeof c.t === 'string' && (c.type !== 'note' || typeof c.text === 'string') && (c.type !== 'list' || (Array.isArray(c.items) && c.items.every(i => i && ID.test(i.id) && (i.lv === undefined || [0, 1, 2].includes(i.lv)))))));
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
@@ -591,6 +591,8 @@ function selfTest() {
   console.assert(!valid(noPage), '缺頁應擋下');
   const badId = copy(); badId.pages.itin[0].id = '"><img>';
   console.assert(!valid(badId), '危險 id 應擋下');
+  const badLv = copy(); badLv.pages.pack.find(c => c.items).items[0].lv = '"><img>';
+  console.assert(!valid(badLv), '危險縮排應擋下');
   const badDate = copy(); badDate.exp[0].date = 'abc';
   console.assert(!valid(badDate), '錯誤日期應擋下');
   const old = copy(); delete old.lb; delete old.tb;

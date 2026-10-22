@@ -1,5 +1,5 @@
 // 改了任何檔案就把版本號 +1，手機下次連網開啟時才會更新
-const CACHE = 'myThaiNote-v7';
+const CACHE = 'myThaiNote-v8';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
