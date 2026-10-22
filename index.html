@@ -56,9 +56,10 @@ a{color:var(--ac)}
 .tile b{display:block;font-size:17px;margin-top:4px}
 .today{background:var(--acbg);border-color:transparent}
 .today .k{color:var(--ac);font-size:14px;font-weight:600}
-.bar{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;position:relative;margin:6px 0 2px}
-.bar i{display:block;height:100%;background:var(--ac)}
-.bar u{position:absolute;top:0;bottom:0;width:2px;background:var(--tx2)}
+.bar{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin:4px 0 10px}
+.bar:last-child{margin-bottom:0}
+.bar i{display:block;height:100%;border-radius:4px}
+.rw{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:14px}
 .big{font-size:24px;font-weight:700}
 .seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{border:0;border-radius:0;min-height:34px}
@@ -290,10 +291,13 @@ function build(seed) {
   });
   return pages;
 }
-const fresh = () => ({v: 1, rate: 1.05, mode: 'go', pages: build(SEED), exp: []});
+// lb = 當地預算、tb = 全部預算；舊資料與舊備份沒有這兩欄，讀進來時補預設值
+const withBudget = j => ({lb: 20000, tb: 50000, ...j});
+const fresh = () => withBudget({v: 1, rate: 1.05, mode: 'go', pages: build(SEED), exp: []});
+const isBudget = b => b === undefined || (typeof b === 'number' && b > 0);
 // 匯入檔與本機資料都從這裡進來：id 只准英數、日期固定格式，才能直接放進 HTML 屬性
 const ID = /^\w*$/, DAY = /^\d{4}-\d{2}-\d{2}$/;
-const valid = j => !!j && j.v === 1 && typeof j.rate === 'number' && j.rate > 0
+const valid = j => !!j && j.v === 1 && typeof j.rate === 'number' && j.rate > 0 && isBudget(j.lb) && isBudget(j.tb)
   && Array.isArray(j.exp) && j.exp.every(e => e && ID.test(e.id) && DAY.test(e.date) && typeof e.amt === 'number')
   && !!j.pages && PAGES.every(([k]) => Array.isArray(j.pages[k]) && j.pages[k].every(c =>
        c && ID.test(c.id) && (c.type !== 'list' || (Array.isArray(c.items) && c.items.every(i => i && ID.test(i.id))))));
@@ -301,7 +305,7 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return fresh();
-    try { const j = JSON.parse(raw); if (valid(j)) return j; } catch (e) {}
+    try { const j = JSON.parse(raw); if (valid(j)) return withBudget(j); } catch (e) {}
     localStorage.setItem(KEY + '.bad', raw); // 不合格的舊資料先另存，避免下次儲存時被蓋掉
   } catch (e) {}
   return fresh();
@@ -380,12 +384,18 @@ function homeHTML() {
     `<a class="card today" href="#/${day ? 'itin' : 'todo'}" style="display:block;text-decoration:none;color:inherit">${head}${todoHTML}<div class="mu" style="margin-top:4px">今日花費 NT$${fmt(spent)}</div></a><div class="grid">${tiles}</div>`;
 }
 
+const barColor = p => p > 100 ? '#9333ea' : p >= 80 ? '#dc2626' : p >= 60 ? '#f97316' : '#16a34a';
 function budgetTop() {
-  const trip = expTWD(S.exp), shop = expTWD(S.exp.filter(e => e.cat === '購物')), pre = prepaid();
-  const bar = (v, max, tick) => `<div class="bar"><i style="width:${Math.min(100, v / max * 100)}%"></i><u style="left:${tick / max * 100}%"></u></div>`;
-  return `<div class="card"><div class="mu">旅途花費（彈性預算 15–20K）</div><div class="big">NT$${fmt(trip)}</div>${bar(trip, 20000, 15000)}
-  <div class="mu" style="margin-top:8px">購物 NT$${fmt(shop)}（預算 5–8K）</div>${bar(shop, 8000, 5000)}
-  <div class="mu" style="margin-top:8px">已購行程 NT$${fmt(pre)} · 總計 NT$${fmt(pre + trip)}</div></div>
+  const trip = expTWD(S.exp), all = prepaid() + trip, left = S.lb - trip;
+  const row = (name, v, max) => {
+    const p = v / max * 100;
+    return `<div class="rw"><span>${name} <b>NT$${fmt(v)}</b></span><span class="mu">${v > max ? `超支 NT$${fmt(v - max)}` : `${fmt(v)} / ${fmt(max)}`} · ${Math.round(p)}%</span></div>
+    <div class="bar"><i style="width:${Math.min(100, p)}%;background:${barColor(p)}"></i></div>`;
+  };
+  return `<div class="card"><div class="mu">旅途預算</div>
+  <div class="row" style="align-items:baseline"><span class="mu">${left < 0 ? '已超支' : '可花費'}</span><span class="big"${left < 0 ? ' style="color:#9333ea"' : ''}>NT$${fmt(Math.abs(left))}</span></div>
+  <div class="mu" style="margin-bottom:8px">≈ ฿${fmt(Math.abs(left) * S.rate)} · 1 TWD = ${S.rate} THB</div>
+  ${row('當地花費', trip, S.lb)}${row('所有花費', all, S.tb)}</div>
   <form class="card" data-act="addexp">
    <div class="row"><input name="amt" type="number" inputmode="decimal" step="any" min="0" placeholder="金額" style="flex:1.3"><select name="cur" style="flex:1"><option>THB</option><option>TWD</option></select><select name="cat" style="flex:1">${CATS.map(c => `<option>${c}</option>`).join('')}</select></div>
    <div class="row" style="margin-top:8px"><input name="note" placeholder="船麵 x2" style="flex:2"><input name="date" type="date" value="${today()}" style="flex:1.4"></div>
@@ -404,7 +414,9 @@ function pageHTML(page) {
 }
 
 function settingsHTML() {
-  return header('設定') + `<div class="card"><h3 style="margin:0 0 8px">匯率</h3><div class="row"><span>1 TWD =</span><input id="rate" type="number" inputmode="decimal" step="0.001" value="${S.rate}" style="flex:1"><span>THB</span></div><p class="mu">換匯後填入實際匯率，所有 THB 花費會依此換算。</p></div>
+  const field = (label, id, val, unit, mode) => `<div class="row" style="margin-top:8px"><span style="width:84px">${label}</span><input id="${id}" type="number" inputmode="${mode}" step="any" min="0" value="${val}" style="flex:1"><span>${unit}</span></div>`;
+  return header('設定') + `<div class="card"><h3 style="margin:0">匯率與預算</h3>${field('1 TWD =', 'rate', S.rate, 'THB', 'decimal')}${field('當地預算', 'lb', S.lb, 'NT$', 'numeric')}${field('全部預算', 'tb', S.tb, 'NT$', 'numeric')}
+  <p class="mu">換匯後填入實際匯率，所有 THB 花費會依此換算。全部預算包含已購行程與當地花費。</p></div>
   <div class="card"><h3 style="margin:0 0 8px">備份</h3><p class="mu" style="margin-top:0">資料只存在這支手機。iOS 可能清除長期沒開的網站資料，建議定期匯出。</p>
   <div class="row"><button data-act="export" style="flex:1">匯出 JSON</button><label style="flex:1"><input id="imp" type="file" accept="application/json,.json" hidden><span style="display:flex;align-items:center;justify-content:center;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--card)">匯入 JSON</span></label></div></div>
   <div class="card"><h3 style="margin:0 0 8px">重置</h3><p class="mu" style="margin-top:0">清除所有勾選、紀錄和編輯，回到原始內容。</p><button data-act="reset" style="color:var(--bad)">重置為預設</button></div>`;
@@ -450,7 +462,7 @@ app.addEventListener('input', e => {
   if (f === 'title') cardOf(e.target).t = e.target.value;
   else if (f === 'item') itemOf(e.target).t = e.target.value;
   else if (f === 'note') cardOf(e.target).text = e.target.value;
-  else if (e.target.id === 'rate') { const r = parseFloat(e.target.value); if (!(r > 0)) return; S.rate = r; }
+  else if (['rate', 'lb', 'tb'].includes(e.target.id)) { const r = parseFloat(e.target.value); if (!(r > 0)) return; S[e.target.id] = r; }
   else return;
   save();
 });
@@ -476,7 +488,7 @@ app.addEventListener('change', e => {
     const j = JSON.parse(txt);
     if (!valid(j)) throw new Error('bad');
     if (!confirm('匯入會覆蓋目前所有資料，確定？')) return;
-    S = j; save(); toast('已匯入'); render();
+    S = withBudget(j); save(); toast('已匯入'); render();
   }).catch(() => toast('這不是 myThaiNote 的備份檔'));
 });
 
@@ -574,6 +586,12 @@ function selfTest() {
   console.assert(!valid(badId), '危險 id 應擋下');
   const badDate = copy(); badDate.exp[0].date = 'abc';
   console.assert(!valid(badDate), '錯誤日期應擋下');
+  const old = copy(); delete old.lb; delete old.tb;
+  console.assert(valid(old) && withBudget(old).lb === 20000 && withBudget(old).tb === 50000, '舊資料補預算預設值');
+  const badBudget = copy(); badBudget.lb = '"><img>';
+  console.assert(!valid(badBudget), '非數字預算應擋下');
+  const colors = [59.9, 60, 79.9, 80, 100, 100.1].map(barColor).join();
+  console.assert(colors === '#16a34a,#f97316,#f97316,#dc2626,#dc2626,#9333ea', '進度條顏色分段 ' + colors);
   console.log('selfTest done');
   return true;
 }
