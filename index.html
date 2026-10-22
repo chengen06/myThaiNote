@@ -508,6 +508,7 @@ app.addEventListener('pointerdown', e => {
   };
   const up = () => {
     grip.removeEventListener('pointermove', move);
+    grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up);
     card.classList.remove('drag'); card.style.transform = ''; list.classList.remove('sorting');
     card.scrollIntoView({block: 'nearest'});
     const order = [...list.children].map(x => x.dataset.cid);
