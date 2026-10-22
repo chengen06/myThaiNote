@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="myThaiNote">
+<meta name="theme-color" content="#f6f3ee">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>myThaiNote</title>
+<style>
+:root{--bg:#f6f3ee;--card:#fff;--soft:#efeae2;--tx:#1f1d1a;--tx2:#6b665e;--tx3:#a19b91;--line:#e4ded4;--ac:#c2410c;--acbg:#fdeee4;--ok:#15803d;--bad:#b91c1c;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--bg:#141311;--card:#1f1d1a;--soft:#2a2724;--tx:#f2efe9;--tx2:#aaa398;--tx3:#6f6a62;--line:#34302b;--ac:#fb923c;--acbg:#3a2417;--ok:#4ade80;--bad:#f87171}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 -apple-system,"PingFang TC","Noto Sans TC",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+#app{max-width:520px;margin:0 auto;padding:0 16px calc(env(safe-area-inset-bottom) + 32px)}
+header{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:8px;min-height:52px;margin:0 -16px 8px;padding:calc(env(safe-area-inset-top)) 16px 0}
+header h1{font-size:20px;margin:0;flex:1;font-weight:600}
+button,select,input,textarea{font:inherit;color:inherit}
+button{background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:40px;min-width:40px;padding:0 12px;cursor:pointer}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+button.ic{border:0;background:none;font-size:20px;padding:0 6px}
+input,select,textarea{background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:40px;padding:6px 10px;width:100%}
+textarea{resize:vertical;line-height:1.5}
+a{color:var(--ac)}
+.card{background:var(--card);border-radius:16px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--line)}
+.sorting .card>:not(.ch){display:none}
+.sorting .card .ch{margin:0}
+.card.drag{position:relative;z-index:10;box-shadow:0 10px 30px rgba(0,0,0,.18);opacity:.95}
+.ch{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ch h3{margin:0;font-size:17px;flex:1;font-weight:600}
+.ch input{font-weight:600}
+.cnt{font-size:13px;color:var(--tx2)}
+.grip{touch-action:none;border:0;background:none;color:var(--tx3);font-size:20px;min-width:44px;margin-right:-10px;letter-spacing:-3px;cursor:grab}
+.it{display:flex;align-items:flex-start;gap:10px;padding:7px 0;cursor:pointer;user-select:none;-webkit-user-select:none}
+.it+.it{border-top:1px solid var(--soft)}
+.lv1{padding-left:26px}.lv2{padding-left:52px}
+.bx{flex:none;width:22px;height:22px;border:2px solid var(--tx3);border-radius:6px;margin-top:1px;display:grid;place-items:center;color:#fff;font-size:14px}
+.on .bx{background:var(--ac);border-color:var(--ac)}
+.on .t{color:var(--tx3);text-decoration:line-through}
+.t{flex:1;min-width:0;overflow-wrap:anywhere}
+.amt{color:var(--tx2);font-size:14px;white-space:nowrap}
+.it.ed{cursor:auto;align-items:center}
+.it.ed input{flex:1}
+.it.ed button{min-width:36px;padding:0 6px}
+.add{margin-top:6px}
+.add input{border-style:dashed;background:none}
+.nt{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+.mu{color:var(--tx2);font-size:14px}
+.row{display:flex;gap:8px;align-items:center}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{display:block;text-decoration:none;color:var(--tx);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;min-height:96px}
+.tile b{display:block;font-size:17px;margin-top:4px}
+.today{background:var(--acbg);border-color:transparent}
+.today .k{color:var(--ac);font-size:14px;font-weight:600}
+.bar{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;position:relative;margin:6px 0 2px}
+.bar i{display:block;height:100%;background:var(--ac)}
+.bar u{position:absolute;top:0;bottom:0;width:2px;background:var(--tx2)}
+.big{font-size:24px;font-weight:700}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0;min-height:34px}
+.seg .sel{background:var(--ac);color:#fff}
+.exp{display:flex;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--soft)}
+.exp .t small{color:var(--tx2)}
+.err{color:var(--bad);font-size:13px;min-height:0}
+.edbar{display:flex;gap:8px;margin:4px 0 16px}
+.edbar button{flex:1}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 24px);transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+'use strict';
+const KEY = 'myThaiNote.v1';
+const TRIP = ['2026-10-24','2026-10-31'];
+
+// 種子資料：清單每行一項，前置兩個空白 = 縮一層，"|數字" = 金額 (TWD)
+const SEED = {
+itin: [
+ ['note','D1 · 10/24 (六)','傍晚抵達 BKK → check in → 朱拉隆功大學夜市',{date:'2026-10-24'}],
+ ['note','D2 · 10/25 (日)','洽圖洽周末市集',{date:'2026-10-25'}],
+ ['note','D3 · 10/26 (一)','THE LOCAL by Oamthong Thai Cuisine → 王權大樓 skywalk + skyverse → 帕蓬夜市',{date:'2026-10-26'}],
+ ['note','D4 · 10/27 (二)','大皇宮/玉佛寺 → 臥佛寺 → 鄭王廟',{date:'2026-10-27'}],
+ ['note','D5 · 10/28 (三)','Central World → Big C → 國土防衛部射擊體驗 → 觀賞泰拳比賽',{date:'2026-10-28'}],
+ ['note','D6 · 10/29 (四)','三頭象神 + 暹羅古城',{date:'2026-10-29'}],
+ ['note','D7 · 10/30 (五)','安帕瓦水上市場 + 美功鐵道市集 一日遊\n集合：Central World 集散地',{date:'2026-10-30'}],
+ ['note','D8 · 10/31 (六)','前往 BKK 搭機返回 TPE',{date:'2026-10-31'}],
+ ['note','彈性行程備案','隨天氣彈性行程（像素大樓 or 鄭王廟）\n遠觀鄭王廟直接去打靶 → D5 可以休息逛街'],
+],
+budget: [
+ ['exp','旅途花費紀錄',''],
+ ['list','潛在花費（勾選＝已購）',`王權大樓skywalk+skyverse|1125
+國土防衛部射擊體驗|3200
+大皇宮/玉佛寺 門票|600
+鄭王廟 門票|300
+三頭象神+暹羅古城 門票|583`],
+ ['list','已知花費',`來回機票|11188
+旅程住宿(七晚)|10549
+觀賞泰拳比賽門票|2131
+安帕瓦水上市場+美功鐵道市集 一日遊|1717
+曼谷BTS兔子卡|179
+eSIM|238
+旅遊保險|2031
+THE LOCAL by Oamthong Thai Cuisine|1500`,{done:true}],
+ ['note','購買管道 / 誰付的','booking (xN)\n· siam@siam 10/24-10/31 $10549/人\n· 兔子卡 (Klook) $179\n· eSIM (Klook) $238\n\nKlook (Norn)\n· 泰拳 $2131 x2\n· 水上市場+鐵道市場 一日套票 $1717 x2\n\n泰銖 (Norn)\n· 換匯 5000 元\n\n自理\n· 富邦旅遊保險 thai $2031\n\nKlook / Kkday 待買：王權大樓 skywalk、大皇宮/玉佛寺 + 鄭王廟、靶場、三頭象神+暹羅古城 (Kkday)'],
+ ['note','消費型態','飲食：一般型（平價餐飲 + 商場美食）\n購物預算：$5000~8000\n彈性預算：15 - 20K'],
+],
+todo: [
+ ['list','10/23 (五) 出發前一天',`TDAC (抵達前72hr)
+整理行李+盤點造冊 (隨身 / 託運)
+電子備份
+10:00 行前確認討論
+  ★ 交換 Norn 手機號碼
+  Show 飯店確認信件
+  約定集合地點 (A12→T1 手扶梯前附近)
+  檢查 K網站需購項目
+  siam@siam Official Line
+  ThaiAirways App
+  隨天氣 彈性行程 (像素大樓 or 鄭王廟)
+  遠觀鄭王廟直接去打靶 > D5可以休息逛街
+ㄉㄋ+刮鬍
+清理回收+垃圾
+開通 eSIM
+天氣預報 (桃機 & 曼谷)
+行李確認
+當天早餐+飲料
+毛小孩餵養交接
+前往通霄車站：接送 thanks to myBro
+線上報到 (TG633)(起飛前24hr)`,{date:'2026-10-23'}],
+ ['list','10/24 (六) 出發',`ZF6 關手機+充電
+颱風動態 / 天氣預報
+航班資訊
+抵達BKK
+報平安
+BKK - 2F - 櫃台領取兔子卡
+BKK - B1 - Superrich換匯 (鄰近機捷售票處 & 7-11)`,{date:'2026-10-24'}],
+ ['note','10/25 – 10/29','詳見 myThai App / 泰國行 Notion'],
+ ['list','10/30 (五)',`Central world 集散地：鐵道水上市場一日遊
+收拾行李
+線上報到 (TG634)(起飛前24hr)`,{date:'2026-10-30'}],
+ ['list','10/31 (六) 返程',`BKK - 1F - 8道旁 - 奇蹟平價美食街 (先換卡)
+退稅 VAT
+報到 > 託運 > 安檢 > 離境
+抵達TPE
+報平安 & 回程訊息
+台鐵領票`,{date:'2026-10-31'}],
+],
+pack: [
+ ['note','泰航行李規定','隨身：上限 7 kg，56 x 45 x 25，三邊總和 ≤ 126 cm\n託運：上限 23 kg，三邊總和 ≤ 158 cm'],
+ ['list','隨身腰包',`灰外套 (穿身上)
+口罩 x2
+隨身濕巾
+耳塞
+空容器 (出海關後裝水)
+皮夾
+  NT$ 15K & THB$ 5K
+  LineBank Card
+  兔子卡
+藍芽耳機
+充電線
+行動電源 (夾鏈袋+封口)`],
+ ['list','隨身行李',`公事包
+  旅行夾
+    護照/護照包
+    機票
+    備用金 20K
+  退稅文件袋
+  證明文件影本
+    機票證明
+    住宿證明
+    保險證明
+    免疫資格
+常備藥品 (腸胃/止痛/感冒)
+常備藥膏 (萬金油/鬪雞牌乳膏)
+內褲+短袖
+絕緣膠布`],
+ ['list','託運行李',`備援文件影本 (xNs_luggage Airtag)
+  護照影本
+  身分證+駕照影本
+  駕照正本 + 證件照x2
+電器整理袋
+  充電線 + 變壓器
+  萬國轉接頭 + 多孔插頭
+延長線
+酒精濕巾
+衛生紙
+行李秤
+大創購物袋
+防曬乳
+摺疊雨傘
+口罩補給
+過濾蓮蓬頭
+100ml 小袋子
+塑膠衣架
+整理袋/壓縮袋`],
+ ['list','託運 · 換洗衣物',`短袖 5+1
+短褲 4
+長褲 2+1
+內褲 5+1
+襪子 5+1
+泳 (帽/褲/鏡)
+皮帶
+袖套
+拖鞋`],
+],
+gift: [
+ ['list','ICONSIAM',`Dear Tummy (G樓)
+芒果/榴槤乾
+船麵泡麵 / 媽媽麵
+鼻通/文創 (at iconcraft / hug craft)
+泰國咖啡
+泰奶沖泡飲
+泰國皇家蜂蜜`],
+ ['list','紀念品',`彩繪大象 / 夜叉 / 三頭象神
+零食 (蝦餅 / 魷魚 / 泰式限定口味)
+大象褲
+漁夫帽`],
+ ['list','歐米亞給 · 家人',`爸：泰國咖啡
+媽：隨身小包
+哥：鼻通
+嫂：水果乾
+妹：文創
+婧：零食`],
+ ['list','歐米亞給 · 朋友',`行李箱提供者
+pbb
+Ivanz
+LostRiver
+洨立
+司馬
+預備扣打 x5~8
+TNM partner x3`],
+ ['note','參考連結','[2026曼谷ICONSIAM怎麼逛](https://www.youtube.com/watch?v=tGWe_oiWfzc)\n[返國注意事項](https://www.fetnet.net/content/cbu/tw/lifecircle/travel/2023/11/restricted_import.html)'],
+],
+info: [
+ ['note','飯店 SIAM@SIAM','SIAM@SIAM DESIGN HOTEL BANGKOK\n電話：+66 (0) 2217 3000\n地址：865 Rama 1 Road, Opposite National Stadium, Wangmai, Patumwan, Bangkok 10330, Thailand'],
+ ['note','TPE 出發報到','※ 泰航櫃位於第一航廈 1F - 5號報到區 (長榮代理)\nT1 出境大廳 4F「機場體驗區 (免費休息區)」\nT1 B1 非管制區 7-11\n桃園機場官網可查航班動態與登機資訊'],
+ ['note','BKK 出發報到','※ 網路報到櫃位於國際櫃檯 J1-J5 / H1-H5 (自助行李託運 4 樓 E-D 排)\n報到主航廈 4 樓出境大廳經濟艙：Row B、D、H、J 區\nBKK 3F 7-ELEVEN'],
+ ['note','報到 / 登機時間','線上報到：起飛前 24hr\n登機：起飛前 30~45 min'],
+ ['note','班機 / 行李異常應變','· 班機延誤聯繫飯店\n· 可申請日用品補貼 (Interim Expenses)\n· 申請證明文件\n· 拍照證據留存'],
+ ['note','PIR 行李遺失表單','姓名：\nEmail：\n當地聯絡電話 (eSIM 可收台灣門號簡訊)：\n\n飯店：SIAM@SIAM DESIGN HOTEL BANGKOK\n電話：+66 (0) 2217 3000\n地址：865 Rama 1 Road, Opposite National Stadium, Wangmai, Patumwan, Bangkok 10330, Thailand\n\n航班編號：TG633 / TG634\n★ 行李託運條碼 (Bag Tag Number，通常貼在登機證背面)：\n\n行李外觀：Nuport 灰色 28 吋行李箱 100%PC\n特徵：\n· Ghibli totoro - Catbus luggage tag\n· Tiffany Blue luggage strap (Crossed Luggage Strap in Tiffany Blue)'],
+ ['note','退稅 VAT','簽章 → 海關 → 領錢\n簽名蓋章：BKK 10 號入口 VAT\n領錢：D1-4 or D6-8'],
+ ['note','WiFi 通話設定','設定 → 行動服務 → 選擇主要台灣門號 → 開啟 Wi-Fi 通話\n國外先開飛行模式再連 Wi-Fi'],
+],
+note: [
+ ['note','按摩推薦','[let relax spa central world](https://www.threads.com/share/JOGU6Ro-d/)'],
+ ['note','湄南河渡船','[觀光藍線](https://www.youtube.com/watch?v=MgTbhLqLktA)\n黃線在地人較多 [參考](https://bobotravel.tw/blog/post/bangkok-boat)'],
+ ['note','Asiatique 河濱夜市','藍船只到 19:00，過後可搭接駁船至 BTS\n抵達沙吞碼頭後，走旁邊的 BTS Saphan Taksin 站（沙潘塔克辛站）'],
+],
+home: [
+ ['list','旅途賦歸',`臨時皮夾復位
+neko定位扣項圈
+Tag換電池 (小八 & Neko)
+狗s + 貓咪滴劑
+備用鑰匙 (w211 & SR150)`],
+],
+};
+
+const PAGES = [
+ ['itin','🗓','行程'],['budget','💰','記帳'],['todo','✅','待辦'],['pack','🧳','行李'],
+ ['gift','🎁','伴手禮'],['info','🛟','資訊/應變'],['note','📝','筆記'],['home','🏠','旅途賦歸'],
+];
+const CATS = ['餐飲','交通','購物','門票','按摩','其他'];
+
+const uid = () => Math.random().toString(36).slice(2, 10);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const pad = n => String(n).padStart(2, '0');
+const today = () => { if (window.TODAY) return window.TODAY; const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const toTWD = (a, cur, rate) => cur === 'TWD' ? a : a / rate;
+const linkify = s => s.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)|(https?:\/\/[^\s<]+)|(\+\d[\d ()-]{6,}\d)/g,
+  (m, t, u, u2, ph) => ph ? `<a href="tel:${ph.replace('(0)', '').replace(/[^\d+]/g, '')}">${ph}</a>`
+                         : `<a href="${u || u2}" target="_blank" rel="noopener">${t || u2}</a>`);
+
+function build(seed) {
+  const pages = {};
+  for (const k in seed) pages[k] = seed[k].map(([type, t, body, o = {}]) => {
+    const c = {id: uid(), type, t, date: o.date};
+    if (type === 'list') c.items = body.split('\n').filter(l => l.trim()).map(l => {
+      const [text, a] = l.trim().split('|');
+      return {id: uid(), t: text, lv: Math.min(2, (l.match(/^ */)[0].length / 2) | 0), d: !!o.done, b: false, a: a ? +a : undefined};
+    });
+    else c.text = body;
+    return c;
+  });
+  return pages;
+}
+const fresh = () => ({v: 1, rate: 1.05, mode: 'go', pages: build(SEED), exp: []});
+const valid = j => j && typeof j === 'object' && j.pages && Array.isArray(j.exp) && typeof j.rate === 'number';
+function load() { try { const j = JSON.parse(localStorage.getItem(KEY)); if (valid(j)) return j; } catch (e) {} return fresh(); }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('無法儲存，請到設定匯出備份'); } }
+
+let S = load(), cur = '', editing = false;
+const $ = s => document.querySelector(s);
+const app = $('#app');
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1800); }
+
+// ---- 計算 ----
+const doneKey = page => page === 'pack' && S.mode === 'back' ? 'b' : 'd';
+function progress(page) {
+  let d = 0, n = 0; const k = doneKey(page);
+  for (const c of S.pages[page] || []) if (c.items) for (const it of c.items) { n++; if (it[k]) d++; }
+  return [d, n];
+}
+const expTWD = list => list.reduce((s, e) => s + toTWD(e.amt, e.cur, S.rate), 0);
+const prepaid = () => S.pages.budget.reduce((s, c) => s + (c.items || []).reduce((x, it) => x + (it.d && it.a ? it.a : 0), 0), 0);
+
+// ---- 畫面 ----
+function header(title, right = '') {
+  const back = cur ? `<button class="ic" data-act="back" aria-label="返回">‹</button>` : '';
+  return `<header>${back}<h1>${title}</h1>${right}</header>`;
+}
+
+function itemHTML(it, k) {
+  const lv = it.lv ? ` lv${it.lv}` : '';
+  const amt = it.a ? `<span class="amt">NT$${fmt(it.a)}</span>` : '';
+  if (editing) return `<div class="it ed${lv}" data-iid="${it.id}"><input data-f="item" value="${esc(it.t)}"><button data-act="indent" aria-label="縮排">⇥</button><button data-act="delitem" aria-label="刪除">✕</button></div>`;
+  return `<div class="it${lv}${it[k] ? ' on' : ''}" data-act="chk" data-iid="${it.id}" role="checkbox" aria-checked="${!!it[k]}" tabindex="0"><span class="bx">${it[k] ? '✓' : ''}</span><span class="t">${linkify(esc(it.t))}</span>${amt}</div>`;
+}
+
+function expHTML() {
+  if (!S.exp.length) return `<p class="mu">還沒有紀錄，從上方新增第一筆。</p>`;
+  const days = {};
+  for (const e of S.exp) (days[e.date] = days[e.date] || []).push(e);
+  return Object.keys(days).sort().reverse().map(d => `<div class="row" style="justify-content:space-between;margin-top:8px"><b>${d.slice(5).replace('-', '/')}</b><span class="mu">NT$${fmt(expTWD(days[d]))}</span></div>` +
+    days[d].map(e => `<div class="exp" data-eid="${e.id}"><span class="t">${esc(e.cat)}${e.note ? ' · ' + esc(e.note) : ''}<br><small>${e.cur === 'THB' ? '฿' : 'NT$'}${fmt(e.amt)}${e.cur === 'THB' ? ` ≈ NT$${fmt(toTWD(e.amt, 'THB', S.rate))}` : ''}</small></span><button class="ic" data-act="delexp" aria-label="刪除這筆">✕</button></div>`).join('')).join('');
+}
+
+function cardHTML(c, page) {
+  const k = doneKey(page);
+  const cnt = c.items ? `<span class="cnt">${c.items.filter(i => i[k]).length}/${c.items.length}</span>` : '';
+  const title = editing ? `<input data-f="title" value="${esc(c.t)}">` : `<h3>${esc(c.t)}</h3>`;
+  let body = '';
+  if (c.type === 'list') body = c.items.map(it => itemHTML(it, k)).join('') +
+    `<form class="add" data-act="additem"><input name="t" placeholder="＋ 新增項目" enterkeyhint="done" autocomplete="off"></form>`;
+  else if (c.type === 'note') body = editing
+    ? `<textarea data-f="note" rows="${c.text.split('\n').length + 1}">${esc(c.text)}</textarea>`
+    : `<div class="nt">${linkify(esc(c.text)) || '<span class="mu">（空白，點右上 ✎ 編輯）</span>'}</div>`;
+  else if (c.type === 'exp') body = expHTML();
+  const tools = editing && c.type !== 'exp' ? `<button class="ic" data-act="delcard" aria-label="刪除卡片">🗑</button>`
+    : c.type === 'note' && c.text ? `<button class="ic" data-act="copy" aria-label="複製內容">⧉</button>` : '';
+  return `<section class="card" data-cid="${c.id}"><div class="ch">${title}${cnt}${tools}<button class="grip" aria-label="拖曳排序">⋮⋮</button></div>${body}</section>`;
+}
+
+function homeHTML() {
+  const t = today(), md = t.slice(5).replace('-', '/');
+  const day = S.pages.itin.find(c => c.date === t);
+  const todo = S.pages.todo.find(c => c.date === t);
+  const spent = expTWD(S.exp.filter(e => e.date === t));
+  let head;
+  if (day) head = `<div class="k">今天 ${md} · ${esc(day.t.split(' · ')[0])}</div><div style="font-weight:600">${linkify(esc(day.text))}</div>`;
+  else if (t < TRIP[0]) head = `<div class="k">今天 ${md} · 出發倒數 ${Math.round((new Date(TRIP[0]) - new Date(t)) / 864e5)} 天</div><div style="font-weight:600">10/24 傍晚抵達 BKK</div>`;
+  else head = `<div class="k">今天 ${md}</div><div style="font-weight:600">旅程結束，歡迎回家 · <a href="#/home">旅途賦歸</a></div>`;
+  const left = todo ? todo.items.filter(i => !i.d) : [];
+  const todoHTML = todo ? `<div class="mu" style="margin-top:6px">待辦 ${todo.items.length - left.length}/${todo.items.length}${left.length ? '：' + left.slice(0, 4).map(i => esc(i.t)).join('、') + (left.length > 4 ? '…' : '') : ' 全部完成'}</div>` : '';
+  const tiles = PAGES.map(([k, ic, name]) => {
+    const [d, n] = progress(k);
+    const sub = k === 'budget' ? `旅途 NT$${fmt(expTWD(S.exp))}` : k === 'itin' ? 'D1–D8' : k === 'info' ? '機場 · PIR · VAT' : k === 'note' ? '小筆 · 連結' : `${d}/${n}`;
+    return `<a class="tile" href="#/${k}"><span style="font-size:24px">${ic}</span><b>${name}</b><span class="mu">${sub}</span></a>`;
+  }).join('');
+  return header('myThaiNote', `<button class="ic" data-act="go" data-to="settings" aria-label="設定">⚙</button>`) +
+    `<a class="card today" href="#/${day ? 'itin' : 'todo'}" style="display:block;text-decoration:none;color:inherit">${head}${todoHTML}<div class="mu" style="margin-top:4px">今日花費 NT$${fmt(spent)}</div></a><div class="grid">${tiles}</div>`;
+}
+
+function budgetTop() {
+  const trip = expTWD(S.exp), shop = expTWD(S.exp.filter(e => e.cat === '購物')), pre = prepaid();
+  const bar = (v, max, tick) => `<div class="bar"><i style="width:${Math.min(100, v / max * 100)}%"></i><u style="left:${tick / max * 100}%"></u></div>`;
+  return `<div class="card"><div class="mu">旅途花費（彈性預算 15–20K）</div><div class="big">NT$${fmt(trip)}</div>${bar(trip, 20000, 15000)}
+  <div class="mu" style="margin-top:8px">購物 NT$${fmt(shop)}（預算 5–8K）</div>${bar(shop, 8000, 5000)}
+  <div class="mu" style="margin-top:8px">已購行程 NT$${fmt(pre)} · 總計 NT$${fmt(pre + trip)}</div></div>
+  <form class="card" data-act="addexp">
+   <div class="row"><input name="amt" type="number" inputmode="decimal" step="any" min="0" placeholder="金額" style="flex:1.3"><select name="cur" style="flex:1"><option>THB</option><option>TWD</option></select><select name="cat" style="flex:1">${CATS.map(c => `<option>${c}</option>`).join('')}</select></div>
+   <div class="row" style="margin-top:8px"><input name="note" placeholder="船麵 x2" style="flex:2"><input name="date" type="date" value="${today()}" style="flex:1.4"></div>
+   <div class="err" id="experr"></div>
+   <div class="row" style="margin-top:8px"><span class="mu" style="flex:1">1 TWD = ${S.rate} THB <a href="#/settings">調整</a></span><button class="pri">新增</button></div>
+  </form>`;
+}
+
+function pageHTML(page) {
+  const meta = PAGES.find(p => p[0] === page);
+  const right = (page === 'pack' ? `<div class="seg"><button data-act="mode" data-m="go" class="${S.mode === 'go' ? 'sel' : ''}">去程</button><button data-act="mode" data-m="back" class="${S.mode === 'back' ? 'sel' : ''}">回程</button></div>` : '') +
+    `<button class="ic" data-act="edit" aria-label="${editing ? '完成編輯' : '編輯'}">${editing ? '✓' : '✎'}</button>`;
+  const addBar = editing ? `<div class="edbar"><button data-act="addcard" data-type="list">＋ 清單卡</button><button data-act="addcard" data-type="note">＋ 筆記卡</button></div>` : '';
+  return header(meta[2], right) + (page === 'budget' ? budgetTop() : '') +
+    `<div class="cards">${S.pages[page].map(c => cardHTML(c, page)).join('')}</div>${addBar}`;
+}
+
+function settingsHTML() {
+  return header('設定') + `<div class="card"><h3 style="margin:0 0 8px">匯率</h3><div class="row"><span>1 TWD =</span><input id="rate" type="number" inputmode="decimal" step="0.001" value="${S.rate}" style="flex:1"><span>THB</span></div><p class="mu">換匯後填入實際匯率，所有 THB 花費會依此換算。</p></div>
+  <div class="card"><h3 style="margin:0 0 8px">備份</h3><p class="mu" style="margin-top:0">資料只存在這支手機。iOS 可能清除長期沒開的網站資料，建議定期匯出。</p>
+  <div class="row"><button data-act="export" style="flex:1">匯出 JSON</button><label style="flex:1"><input id="imp" type="file" accept="application/json,.json" hidden><span style="display:flex;align-items:center;justify-content:center;min-height:40px;border:1px solid var(--line);border-radius:10px;background:var(--card)">匯入 JSON</span></label></div></div>
+  <div class="card"><h3 style="margin:0 0 8px">重置</h3><p class="mu" style="margin-top:0">清除所有勾選、紀錄和編輯，回到原始內容。</p><button data-act="reset" style="color:var(--bad)">重置為預設</button></div>`;
+}
+
+function render() {
+  const m = location.hash.match(/^#\/(\w+)/);
+  const page = m && (S.pages[m[1]] || m[1] === 'settings') ? m[1] : '';
+  if (page !== cur) { editing = false; cur = page; window.scrollTo(0, 0); }
+  app.innerHTML = !cur ? homeHTML() : cur === 'settings' ? settingsHTML() : pageHTML(cur);
+}
+
+// ---- 事件 ----
+const cardOf = el => S.pages[cur].find(c => c.id === el.closest('[data-cid]').dataset.cid);
+const itemOf = el => cardOf(el).items.find(i => i.id === el.closest('[data-iid]').dataset.iid);
+
+app.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el || e.target.closest('a') || el.tagName === 'FORM') return;
+  const act = el.dataset.act;
+  if (act === 'back') { history.length > 1 ? history.back() : location.hash = ''; return; }
+  if (act === 'go') { location.hash = '#/' + el.dataset.to; return; }
+  if (act === 'chk') { const it = itemOf(el), k = doneKey(cur); it[k] = !it[k]; }
+  else if (act === 'edit') { editing = !editing; }
+  else if (act === 'mode') { S.mode = el.dataset.m; }
+  else if (act === 'indent') { const it = itemOf(el); it.lv = ((it.lv || 0) + 1) % 3; }
+  else if (act === 'delitem') { const c = cardOf(el), it = itemOf(el); c.items.splice(c.items.indexOf(it), 1); }
+  else if (act === 'delcard') { const c = cardOf(el); if (!confirm(`刪除「${c.t}」整張卡片？`)) return; S.pages[cur].splice(S.pages[cur].indexOf(c), 1); }
+  else if (act === 'addcard') { const type = el.dataset.type; S.pages[cur].push(type === 'list' ? {id: uid(), type, t: '新清單', items: []} : {id: uid(), type, t: '新筆記', text: ''}); }
+  else if (act === 'delexp') { const id = el.closest('[data-eid]').dataset.eid; if (!confirm('刪除這筆花費？')) return; S.exp = S.exp.filter(x => x.id !== id); }
+  else if (act === 'copy') { const t = cardOf(el).text; navigator.clipboard ? navigator.clipboard.writeText(t).then(() => toast('已複製'), () => toast('無法複製')) : toast('無法複製'); return; }
+  else if (act === 'export') { exportJSON(); return; }
+  else if (act === 'reset') { if (!confirm('確定清除所有紀錄並回到預設內容？建議先匯出備份。')) return; S = fresh(); toast('已重置'); }
+  else return;
+  save(); render();
+});
+app.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && e.target.dataset.act === 'chk') { e.preventDefault(); e.target.click(); } });
+
+app.addEventListener('input', e => {
+  const f = e.target.dataset.f;
+  if (f === 'title') cardOf(e.target).t = e.target.value;
+  else if (f === 'item') itemOf(e.target).t = e.target.value;
+  else if (f === 'note') cardOf(e.target).text = e.target.value;
+  else if (e.target.id === 'rate') { const r = parseFloat(e.target.value); if (!(r > 0)) return; S.rate = r; }
+  else return;
+  save();
+});
+
+app.addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.dataset.act === 'additem') {
+    const t = f.t.value.trim(); if (!t) return;
+    const c = cardOf(f); c.items.push({id: uid(), t, lv: 0, d: false, b: false});
+    save(); render(); const inp = app.querySelector(`[data-cid="${c.id}"] .add input`); if (inp) inp.focus();
+  } else if (f.dataset.act === 'addexp') {
+    const amt = parseFloat(f.amt.value);
+    if (!(amt > 0)) { $('#experr').textContent = '請輸入大於 0 的金額'; f.amt.focus(); return; }
+    S.exp.push({id: uid(), date: f.date.value || today(), amt, cur: f.cur.value, cat: f.cat.value, note: f.note.value.trim()});
+    save(); render(); toast(`已記錄 ${f.cur.value === 'THB' ? '฿' : 'NT$'}${fmt(amt)}`);
+  }
+});
+
+app.addEventListener('change', e => {
+  if (e.target.id !== 'imp' || !e.target.files[0]) return;
+  e.target.files[0].text().then(txt => {
+    const j = JSON.parse(txt);
+    if (!valid(j)) throw new Error('bad');
+    if (!confirm('匯入會覆蓋目前所有資料，確定？')) return;
+    S = j; save(); toast('已匯入'); render();
+  }).catch(() => toast('這不是 myThaiNote 的備份檔'));
+});
+
+function exportJSON() {
+  const name = `myThaiNote-${today()}.json`;
+  const blob = new Blob([JSON.stringify(S)], {type: 'application/json'});
+  const file = new File([blob], name, {type: 'application/json'});
+  if (navigator.canShare && navigator.canShare({files: [file]})) { navigator.share({files: [file]}).catch(() => {}); return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// ---- 拖曳排序：只有把手會觸發，頁面捲動不受影響 ----
+app.addEventListener('pointerdown', e => {
+  const grip = e.target.closest('.grip'); if (!grip) return;
+  e.preventDefault();
+  const card = grip.closest('.card'), list = card.parentNode;
+  try { grip.setPointerCapture(e.pointerId); } catch (x) {}
+  list.classList.add('sorting'); // 收合成只剩標題，長卡片才拖得過去
+  card.classList.add('drag');
+  const off = card.offsetHeight / 2;
+  card.style.transform = `translateY(${e.clientY - off - card.getBoundingClientRect().top}px)`;
+  const move = ev => {
+    const y = ev.clientY;
+    const next = [...list.children].find(s => s !== card && y < s.getBoundingClientRect().top + s.offsetHeight / 2);
+    if (next) { if (card.nextElementSibling !== next) list.insertBefore(card, next); }
+    else if (list.lastElementChild !== card) list.appendChild(card);
+    if (y < 70) window.scrollBy(0, -14); else if (y > innerHeight - 70) window.scrollBy(0, 14);
+    card.style.transform = '';
+    card.style.transform = `translateY(${y - off - card.getBoundingClientRect().top}px)`;
+  };
+  const up = () => {
+    grip.removeEventListener('pointermove', move);
+    card.classList.remove('drag'); card.style.transform = ''; list.classList.remove('sorting');
+    card.scrollIntoView({block: 'nearest'});
+    const order = [...list.children].map(x => x.dataset.cid);
+    S.pages[cur].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+    save();
+  };
+  grip.addEventListener('pointermove', move);
+  grip.addEventListener('pointerup', up, {once: true});
+  grip.addEventListener('pointercancel', up, {once: true});
+});
+
+window.addEventListener('hashchange', render);
+render();
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+
+// ---- 金額計算自我檢查：網址加 ?test 時執行 ----
+function selfTest() {
+  console.assert(Math.abs(toTWD(320, 'THB', 1.05) - 304.7619) < 1e-3, 'THB→TWD');
+  console.assert(toTWD(100, 'TWD', 1.05) === 100, 'TWD 不換算');
+  const f = build(SEED);
+  const known = f.budget.find(c => c.t === '已知花費').items.reduce((s, i) => s + (i.d ? i.a : 0), 0);
+  console.assert(known === 29533, '已知花費總和 ' + known);
+  const pot = f.budget.find(c => c.t.startsWith('潛在')).items;
+  console.assert(pot.every(i => !i.d) && pot.reduce((s, i) => s + i.a, 0) === 5808, '潛在花費');
+  console.assert(f.pack.find(c => c.t === '隨身行李').items[2].lv === 2, '巢狀縮排');
+  console.assert(linkify('+66 (0) 2217 3000').includes('tel:+6622173000'), 'tel 連結');
+  console.log('selfTest done');
+  return true;
+}
+if (location.search.includes('test')) selfTest();
+</script>
+</body>
+</html>
